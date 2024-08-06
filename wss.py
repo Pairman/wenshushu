@@ -10,8 +10,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import base58
 import requests
-from Cryptodome.Cipher import DES
-from Cryptodome.Util import Padding
+from Crypto.Cipher import DES
+from Crypto.Util import Padding
 
 
 def login_anonymous(session):
