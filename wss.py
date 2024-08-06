@@ -47,10 +47,10 @@ def download(url):
 		days, remainder = divmod(int(float(expire)), 3600*24)
 		hours, remainder = divmod(remainder, 3600)
 		minutes, seconds = divmod(remainder, 60)
-		print(f'文件过期时间:{days}天{hours}时{minutes}分{seconds}秒')
+		print(f"File expires in: {days}:{hours}:{minutes}:{seconds}")
 
 		file_size = rsp['data']['file_size']
-		print(f'文件大小:{round(int(file_size)/1024**2,2)}MB')
+		print(f"File size:{round(int(file_size)/1024**2,2)}MiB")
 		return rsp['data']['boxid'], rsp['data']['ufileid']  # pid
 
 	def list_file(tid):
@@ -74,11 +74,11 @@ def download(url):
 		rsp = r.json()
 		filename = rsp['data']['fileList'][0]['fname']
 		fid = rsp['data']['fileList'][0]['fid']
-		print(f'文件名:{filename}')
+		print(f"File name:{filename}")
 		sign(bid, fid, filename)
 
 	def down_handle(url, filename):
-		print('开始下载!', end='\r')
+		print("Downloading file.")
 		r = s.get(url, stream=True)
 		dl_size = int(r.headers.get('Content-Length'))
 		block_size = 2097152
@@ -88,8 +88,9 @@ def download(url):
 			for chunk in r.iter_content(chunk_size=block_size):
 				f.write(chunk)
 				dl_count += len(chunk)
-				print(f'下载进度:{int(dl_count/dl_size*100)}%', end='\r')
-			print('下载完成:100%')
+				print(f"Downloading progress:{int(dl_count/dl_size*100)}%", end="\r")
+			print("\n")
+			print("File downloaded successfully.")
 
 	def sign(bid, fid, filename):
 		r = s.post(
@@ -102,7 +103,7 @@ def download(url):
 		)
 		if r.json()['data']['url'] == "" and \
 				r.json()['data']['ttNeed'] != 0:
-			print("对方的分享流量不足")
+			print("The file sharer has insufficient sharing quota.")
 			exit(0)
 		url = r.json()['data']['url']
 		down_handle(url, filename)
@@ -182,11 +183,11 @@ def upload(filePath):
 		rest_space = int(rsp['data']['rest_space'])
 		send_space = int(rsp['data']['send_space'])
 		storage_space = rest_space + send_space
-		print('当前已用空间:{}GB,剩余空间:{}GB,总空间:{}GB'.format(
-			round(send_space / 1024**3, 2),
-			round(rest_space / 1024**3, 2),
-			round(storage_space / 1024**3, 2)
-		))
+		print(
+			f"Storage used: {round(send_space / 1024**3, 2)}GB, "
+			f"available: {round(rest_space / 1024**3, 2)}GB, "
+			f"total:{round(storage_space / 1024**3, 2)}GB"
+		)
 
 	def userinfo():
 		s.post(
@@ -231,10 +232,10 @@ def upload(filePath):
 		)
 		rsp = r.json()
 		if rsp["code"] == 1021:
-			print(f'操作太快啦！请{rsp["message"]}秒后重试')
+			print(f'Too many requests! Retry after {rsp["message"]} seconds.')
 			exit(0)
 		data = rsp["data"]
-		assert data, "需要滑动验证码"
+		assert data, "Slider CAPTCHA is needed yet not implemented."
 		bid, ufileid, tid = data["bid"], data["ufileid"], data["tid"]
 		upId = get_up_id(bid, ufileid, tid, file_size)
 		return bid, ufileid, tid, upId
@@ -281,8 +282,8 @@ def upload(filePath):
 			}
 		)
 		rsp = r.json()
-		print(f"个人管理链接：{rsp['data']['mgr_url']}")
-		print(f"公共链接：{rsp['data']['public_url']}")
+		print(f"Admin link: {rsp['data']['mgr_url']}")
+		print(f"Public link: {rsp['data']['public_url']}")
 
 	def fast():
 		boxid, preid, taskid, upId = addsend()
@@ -319,7 +320,7 @@ def upload(filePath):
 					hash_codes += calc_file_hash("MD5", block)
 				payload['hash']['cm'] = sha1_str(hash_codes)
 			elif can_fast and ufile:
-				print(f'文件{name}可以被秒传！')
+				print(f"Instant transfer is available for `{name}`.")
 				getprocess(upId)
 				copysend(boxid, taskid, preid)
 				exit(0)
@@ -394,7 +395,7 @@ if __name__ == "__main__":
 	help = (
 		f"{argv[0]} - Wenshushu CLI 0.0.1\n\n"
 		f"Usage: \n"
-		f"  {argv[0]} u[p[load]] <file>\t\tUpload file.\n"
+		f"  {argv[0]} u[p[load]] <file>\tUpload file.\n"
 		f"  {argv[0]} d[own[load]] <url>\tDownload file.\n"
 		f"  {argv[0]} h[elp]\t\t\tShow help."
 	)
@@ -403,7 +404,7 @@ if __name__ == "__main__":
 		"User-Agent":
 		"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, "
 		"like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-		"Accept-Language": "en",
+		"Accept-Language": "en_US, en;q=0.9",
 		"X-TOKEN": login_anonymous(s)
 	}
 	try:
@@ -416,10 +417,18 @@ if __name__ == "__main__":
 			elif argv[1] in ["download", "down", "d"]:
 				download(argv[2])
 			else:
-				print("Invalid arguments.", file = stderr)
+				print(
+					"Invalid options.\n"
+					f"See `{argv[0]} help` for help.",
+					file = stderr
+				)
 				exit(2)
 		else:
-			print("Invalid arguments.", file = stderr)
+			print(
+				"Invalid options.\n"
+				f"See `{argv[0]} help` for help.",
+				file = stderr
+			)
 			exit(2)
 	except Exception as e:
 		traceback.print_exc()
